@@ -1,0 +1,68 @@
+[cloudera@quickstart ~]$ pig -x local
+log4j:WARN No appenders could be found for logger (org.apache.hadoop.util.Shell).
+log4j:WARN Please initialize the log4j system properly.
+log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
+org.apache.pig.backend.hadoop.executionengine.HExecutionEngine - Connecting to hadoop file system at: hdfs://quickstart.cloudera:8020
+
+grunt> fs -copyFromLocal /home/cloudera/Desktop/NYSEdaily.txt /user/cloudera/pig_data
+
+grunt> fs -ls /user/cloudera/pig_data
+Found 3 items
+-rw-r--r--   1 cloudera cloudera    3194098 2022-07-27 05:55 /user/cloudera/pig_data/NYSEdaily.txt
+-rw-r--r--   1 cloudera cloudera         80 2022-07-25 02:57 /user/cloudera/pig_data/order.txt
+-rw-r--r--   1 cloudera cloudera         99 2022-07-25 02:57 /user/cloudera/pig_data/order_details.txt
+
+grunt> nyse_data = LOAD '/user/cloudera/pig_data/NYSEdaily.txt' using PigStorage('\t') as (Exchanges:chararray,Ticker:chararray,Date:Datetime,Open:double,High:double,Low:double,Close:double,Volume:int,Adjclose:double);
+
+grunt> describe nyse_data;
+nyse_data: {Exchanges: chararray,Ticker: chararray,Date: datetime,Open: double,High: double,Low: double,Close: double,Volume: int,Adjclose: double}
+grunt> nyse_data_limit = LIMIT nyse_data 10;
+grunt> Dump nyse_data_limit;
+
+(NYSE,CLI,2009-12-17T00:00:00.000-08:00,34.18,34.53,33.84,34.21,1082600,33.76)
+(NYSE,CLI,2009-12-18T00:00:00.000-08:00,34.11,34.38,33.73,34.22,1152600,33.77)
+(NYSE,CLI,2009-12-21T00:00:00.000-08:00,34.65,34.74,34.41,34.73,428400,34.28)
+(NYSE,CLI,2009-12-22T00:00:00.000-08:00,34.76,35.04,34.71,35.04,564600,34.58)
+(NYSE,CLI,2009-12-23T00:00:00.000-08:00,35.13,35.51,35.07,35.21,520200,34.75)
+(NYSE,CLI,2009-12-24T00:00:00.000-08:00,35.38,35.6,35.19,35.47,230200,35.01)
+(NYSE,CLI,2009-12-28T00:00:00.000-08:00,35.67,36.23,35.49,35.69,565000,35.23)
+(NYSE,CLI,2009-12-29T00:00:00.000-08:00,35.69,35.95,35.21,35.34,556500,34.88)
+(NYSE,CLI,2009-12-30T00:00:00.000-08:00,35.22,35.46,34.96,35.4,516900,34.94)
+(NYSE,CLI,2009-12-31T00:00:00.000-08:00,35.39,35.7,34.5,34.57,890100,34.12)
+
+grunt> g = GROUP nyse_data by (GetMonth(Date),Ticker);
+grunt> describe g;
+g: {group: (org.apache.pig.builtin.getmonth_Date_159: int,Ticker: chararray),nyse_data: {(Exchanges: chararray,Ticker: chararray,Date: datetime,Open: double,High: double,Low: double,Close: double,Volume: int,Adjclose: double)}}
+
+
+grunt> x = FOREACH g generate group.Ticker, group.$0,AVG(B.Volume);
+grunt> Describe x;
+x: {Ticker: chararray,org.apache.pig.builtin.getmonth_Date_375: int,double}
+
+grunt> STORE x INTO '/user/cloudera/AvgVolume' using PigStorage ('\t');
+
+Input(s):
+Successfully read 57391 records (3194485 bytes) from: "/user/cloudera/pig_data/NYSEdaily.txt"
+
+Output(s):
+Successfully stored 2734 records (59983 bytes) in: "/user/cloudera/AvgVolume"
+
+Counters:
+Total records written : 2734
+Total bytes written : 59983
+Spillable Memory Manager spill count : 0
+Total bags proactively spilled: 0
+Total records proactively spilled: 0
+
+Job DAG:
+job_1658912881203_0024
+
+
+2022-07-27 09:10:30,791 [main] INFO  org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.MapReduceLauncher - Success!
+grunt> fs -ls /user/cloudera/AvgVolume
+Found 2 items
+-rw-r--r--   1 cloudera cloudera          0 2022-07-27 09:10 /user/cloudera/AvgVolume/_SUCCESS
+-rw-r--r--   1 cloudera cloudera      59983 2022-07-27 09:10 /user/cloudera/AvgVolume/part-r-00000
+
+
+

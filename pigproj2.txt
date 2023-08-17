@@ -1,0 +1,97 @@
+grunt> nyse_data = LOAD '/user/cloudera/pig_data/NYSEdaily.txt' using PigStorage('\t') as (Exchanges:chararray,Ticker:chararray,Date:Datetime,Open:double,High:double,Low:double,Close:double,Volume:int,Adjclose:double);
+
+grunt> nyse_data2 = LOAD '/user/cloudera/AvgVolume/part-r-00000' using PigStorage('\t') as (Ticker:chararray,Month:int,Avgvolume:double);
+
+grunt> describe nyse_data2;
+nyse_data2: {Ticker: chararray,Month: int,Avgvolume: double}
+
+grunt> sjoin = JOIN nyse_data by (Ticker,GetMonth(Date)),nyse_data2 by (Ticker,Month);
+
+grunt> Describe sjoin;
+sjoin: {nyse_data::Exchanges: chararray,nyse_data::Ticker: chararray,nyse_data::Date: datetime,nyse_data::Open: double,nyse_data::High: double,nyse_data::Low: double,nyse_data::Close: double,nyse_data::Volume: int,nyse_data::Adjclose: double,nyse_data2::Ticker: chararray,nyse_data2::Month: int,nyse_data2::Avgvolume: double}
+
+grunt> nyse_filter = FILTER  sjoin BY (double)nyse_data.Volume >= nyse_data2.Avgvolume);
+
+grunt> store nyse_filter into '/user/cloudera/High_Volume/' using PigStorage ('\t');
+Input(s):
+Successfully read 57391 records from: "/user/cloudera/pig_data/NYSEdaily.txt"
+Successfully read 2734 records from: "/user/cloudera/AvgVolume/part-r-00000"
+
+Output(s):
+Successfully stored 22798 records (2192101 bytes) in: "/user/cloudera/High_Volume"
+
+Counters:
+Total records written : 22798
+Total bytes written : 2192101
+Spillable Memory Manager spill count : 0
+Total bags proactively spilled: 0
+Total records proactively spilled: 0
+
+Job DAG:
+job_1658912881203_0036
+
+
+2022-07-28 02:57:32,517 [main] INFO  org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.MapReduceLauncher - Success!
+
+grunt> fs -ls;
+Found 12 items
+drwx------   - cloudera cloudera          0 2022-07-28 00:01 .Trash
+drwxr-xr-x   - cloudera cloudera          0 2022-07-27 01:42 .sparkStaging
+drwx------   - cloudera cloudera          0 2022-07-28 02:57 .staging
+drwxr-xr-x   - cloudera cloudera          0 2022-07-27 23:44 AvgVolume
+drwxr-xr-x   - cloudera cloudera          0 2022-07-28 02:57 High_Volume
+drwxr-xr-x   - cloudera cloudera          0 2022-07-20 23:19 hadoop
+drwxr-xr-x   - cloudera cloudera          0 2022-07-27 05:55 pig_data
+drwxr-xr-x   - cloudera cloudera          0 2022-07-26 03:41 pig_out
+drwxr-xr-x   - cloudera cloudera          0 2022-07-25 02:01 riya
+drwxr-xr-x   - cloudera cloudera          0 2022-07-21 02:02 wordcount
+
+grunt> fs -ls /user/cloudera/High_Volume
+Found 2 items
+-rw-r--r--   1 cloudera cloudera          0 2022-07-28 02:57 /user/cloudera/High_Volume/_SUCCESS
+-rw-r--r--   1 cloudera cloudera    2192101 2022-07-28 02:57 /user/cloudera/High_Volume/part-r-00000
+
+grunt> nyse_filter_limit = LIMIT nyse_filter 10;
+
+grunt> Dump nyse_filter_limit;
+
+HadoopVersion	PigVersion	UserId	StartedAt	FinishedAt	Features
+2.6.0-cdh5.13.0	0.12.0-cdh5.13.0	cloudera	2022-07-28 03:01:27	2022-07-28 03:03:30	HASH_JOIN,FILTER,LIMIT
+
+Success!
+
+Job Stats (time in seconds):
+JobId	Maps	Reduces	MaxMapTime	MinMapTIme	AvgMapTime	MedianMapTime	MaxReduceTime	MinReduceTime	AvgReduceTime	MedianReducetime	Alias	Feature	Outputs
+job_1658912881203_0037	2	1	39	38	38	38	14	14	14	14	nyse_data,nyse_data2,nyse_filter,nyse_filter_limit,sjoinHASH_JOIN	
+job_1658912881203_0038	1	1	6	6	6	6	6	66	6			hdfs://quickstart.cloudera:8020/tmp/temp1111470772/tmp-9996601,
+
+Input(s):
+Successfully read 2734 records from: "/user/cloudera/AvgVolume/part-r-00000"
+Successfully read 57391 records from: "/user/cloudera/pig_data/NYSEdaily.txt"
+
+Output(s):
+Successfully stored 10 records (912 bytes) in: "hdfs://quickstart.cloudera:8020/tmp/temp1111470772/tmp-9996601"
+
+Counters:
+Total records written : 10
+Total bytes written : 912
+Spillable Memory Manager spill count : 0
+Total bags proactively spilled: 0
+Total records proactively spilled: 0
+
+Job DAG:
+job_1658912881203_0037	->	job_1658912881203_0038,
+job_1658912881203_0038
+
+2022-07-28 03:03:35,212 [main] INFO  org.apache.pig.backend.hadoop.executionengine.util.MapRedUtil - Total input paths to process : 1
+(NYSE,CA,2009-01-09T00:00:00.000-08:00,18.37,18.65,17.71,18.42,7267500,18.24,CA,1,5864630.0)
+(NYSE,CA,2009-01-13T00:00:00.000-08:00,18.25,18.75,18.19,18.62,6014300,18.44,CA,1,5864630.0)
+(NYSE,CA,2009-01-14T00:00:00.000-08:00,18.24,18.45,17.73,17.98,6213700,17.8,CA,1,5864630.0)
+(NYSE,CA,2009-01-21T00:00:00.000-08:00,17.31,17.82,17.06,17.54,6596700,17.37,CA,1,5864630.0)
+(NYSE,CA,2009-01-22T00:00:00.000-08:00,17.21,17.55,17.09,17.26,6704000,17.09,CA,1,5864630.0)
+(NYSE,CA,2009-01-27T00:00:00.000-08:00,17.16,17.71,17.1,17.41,7069600,17.24,CA,1,5864630.0)
+(NYSE,CA,2009-01-28T00:00:00.000-08:00,17.85,18.21,17.6,17.89,6475800,17.71,CA,1,5864630.0)
+(NYSE,CA,2009-01-30T00:00:00.000-08:00,17.8,18.52,17.8,17.99,10435300,17.81,CA,1,5864630.0)
+(NYSE,CA,2009-02-12T00:00:00.000-08:00,18.08,18.7,17.83,18.68,6902100,18.53,CA,2,6878573.684210527)
+(NYSE,CA,2009-02-19T00:00:00.000-08:00,17.59,17.66,17.1,17.12,7526300,16.99,CA,2,6878573.684210527)
+
